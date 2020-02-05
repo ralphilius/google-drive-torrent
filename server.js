@@ -9,6 +9,10 @@ const DRIVE_REDIRECT_URI = process.env.DRIVE_REDIRECT_URI || 'http://localhost:3
 const DRIVE_RETURN_FIELDS = 'id,name,webViewLink';
 const DRIVE_TORRENT_DIR = 'My torrents';
 
+var RedisStore = require(‘connect-redis’)(express);
+
+var url = require(‘url’)
+
 const isProduction = process.env.NODE_ENV == 'production';
 
 const torrentClients = {}; // {userId: Webtorrent client}
@@ -34,13 +38,13 @@ const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const ios = require('socket.io-express-session');
-const session = require('express-session')({
-    secret: 'google-drive-torrent',
-    resave: false,
-    saveUninitialized: false,
-    rolling: true,
-    cookie: {httpOnly: true, maxAge: 3600000}
-});
+// const session = require('express-session')({
+//     secret: 'google-drive-torrent',
+//     resave: false,
+//     saveUninitialized: false,
+//     rolling: true,
+//     cookie: {httpOnly: true, maxAge: 3600000}
+// });
 
 app.set('port', (process.env.PORT || 3000));
 app.set('views', path.join(__dirname, 'views'));
@@ -56,12 +60,32 @@ app.use('/js',express.static('data/js'));
 
 app.use(fileUpload());
 app.use(helmet());
-app.use(session);
+
 
 if (isProduction) {
     app.use(forceHttps);
+    var redisUrl = url.parse(process.env.REDISTOGO_URL);
+    var redisAuth = redisUrl.auth.split(‘:’);
+    var session = express.session({
+        secret: process.env.SESSION_PASSWORD || "password", 
+        store: new RedisStore({
+            host: redisUrl.hostname,
+            port: redisUrl.port,
+            db: redisAuth[0],
+            pass: redisAuth[1]
+        })  
+    });
+} else {
+    var session = express.session({
+        secret: process.env.SESSION_PASSWORD || "password", 
+        store: new RedisStore({
+            host: "127.0.0.1",
+            port: "6379",
+            db: "session"
+        })
+      });
 }
-
+app.use(session);
 io.use(ios(session));
 io.on('connection', (socket) => {
     const session = socket.handshake.session;
