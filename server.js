@@ -251,7 +251,9 @@ app.post('/add-torrent', (req, res) => {
             if (err) {
                 return res.status(500).json({message: err.message});
             }
-            console.log(`Added torrent: ${util.inspect(torrent.files)}`);
+            //console.log(`Added torrent: ${util.inspect(torrent.files)}`);
+            console.log(`Added torrent`);
+            console.log(torrent);
             const torrentFiles = {
                 infoHash: torrent.infoHash,
                 files: getFileInfos(torrent)
