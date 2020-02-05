@@ -9,8 +9,6 @@ const DRIVE_REDIRECT_URI = process.env.DRIVE_REDIRECT_URI || 'http://localhost:3
 const DRIVE_RETURN_FIELDS = 'id,name,webViewLink';
 const DRIVE_TORRENT_DIR = 'My torrents';
 
-
-
 const isProduction = process.env.NODE_ENV == 'production';
 
 const torrentClients = {}; // {userId: Webtorrent client}
@@ -32,9 +30,6 @@ const _ = require('lodash');
 const zip = require('express-zip');
 const driveIO = require('google-drive-io');
 const app = express();
-
-var RedisStore = require('connect-redis')(express);
-var url = require('url')
 
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
@@ -64,7 +59,6 @@ app.use(fileUpload());
 app.use(helmet());
 
 
-
 const redisOptions = {
   url: process.env.REDIS_URL,
   no_ready_check: true,
@@ -83,7 +77,7 @@ const redisOptions = {
   }
 };
 
-redis = require('redis'),
+const redis = require('redis'),
 redisClient = redis.createClient(redisOptions),
 redisStore = require('connect-redis')(session);
 
