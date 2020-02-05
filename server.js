@@ -49,6 +49,11 @@ app.set('view engine', 'pug');
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use('/img',express.static('data/img'));
+app.use('/css',express.static('data/css'));
+app.use('/js',express.static('data/js'));
+
 app.use(fileUpload());
 app.use(helmet());
 app.use(session);
