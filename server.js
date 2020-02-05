@@ -39,6 +39,7 @@ var url = require('url')
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const ios = require('socket.io-express-session');
+const session = require('express-session')
 // const session = require('express-session')({
 //     secret: 'google-drive-torrent',
 //     resave: false,
@@ -63,31 +64,58 @@ app.use(fileUpload());
 app.use(helmet());
 
 
+
+const redisOptions = {
+  url: process.env.REDIS_URL,
+  no_ready_check: true,
+  retry_strategy: (options) => {
+    if (options.error && options.error.code === 'ECONNREFUSED') {
+      return new Error('The server refused the connection');
+    }
+    if (options.total_retry_time > 1000 * 60 * 60) {
+      return new Error('Retry time exhausted');
+    }
+    if (options.attempt > 10) {
+      return undefined;
+    }
+    // reconnect after
+    return Math.min(options.attempt * 100, 3000);
+  }
+};
+
+redis = require('redis'),
+redisClient = redis.createClient(redisOptions),
+redisStore = require('connect-redis')(session);
+
+
 if (isProduction) {
     app.use(forceHttps);
-    var redisUrl = url.parse(process.env.REDISTOGO_URL);
-    var redisAuth = redisUrl.auth.split(':');
-    var session = express.session({
-        secret: process.env.SESSION_PASSWORD || "password", 
-        store: new RedisStore({
-            host: redisUrl.hostname,
-            port: redisUrl.port,
-            db: redisAuth[0],
-            pass: redisAuth[1]
-        })  
-    });
-} else {
-    var session = express.session({
-        secret: process.env.SESSION_PASSWORD || "password", 
-        store: new RedisStore({
-            host: "127.0.0.1",
-            port: "6379",
-            db: "session"
-        })
-      });
-}
-app.use(session);
-io.use(ios(session));
+} 
+app.use(session({
+    secret: process.env.SESSION_SECRET || "password",
+    name: "session",
+    resave: true,
+    saveUninitialized: true,
+    cookie: { secure: false }, // Note that the cookie-parser module is no longer needed
+    store: new redisStore({
+      url: process.env.REDIS_URL,
+      client: redisClient,
+      ttl: 86400
+    }),
+  }))
+
+io.use(ios(session({
+    secret: process.env.SESSION_SECRET || "password",
+    name: "session",
+    resave: true,
+    saveUninitialized: true,
+    cookie: { secure: false }, // Note that the cookie-parser module is no longer needed
+    store: new redisStore({
+      url: process.env.REDIS_URL,
+      client: redisClient,
+      ttl: 86400
+    }),
+  })));
 io.on('connection', (socket) => {
     const session = socket.handshake.session;
     if ('user' in session) {
