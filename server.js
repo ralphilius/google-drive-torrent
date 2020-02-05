@@ -33,8 +33,8 @@ const zip = require('express-zip');
 const driveIO = require('google-drive-io');
 const app = express();
 
-var RedisStore = require(‘connect-redis’)(express);
-var url = require(‘url’)
+var RedisStore = require('connect-redis')(express);
+var url = require('url')
 
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
@@ -66,7 +66,7 @@ app.use(helmet());
 if (isProduction) {
     app.use(forceHttps);
     var redisUrl = url.parse(process.env.REDISTOGO_URL);
-    var redisAuth = redisUrl.auth.split(‘:’);
+    var redisAuth = redisUrl.auth.split(':');
     var session = express.session({
         secret: process.env.SESSION_PASSWORD || "password", 
         store: new RedisStore({
